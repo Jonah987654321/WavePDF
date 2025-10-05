@@ -16,5 +16,5 @@ include(${CMAKE_BINARY_DIR}/conan/conandeps_legacy.cmake OPTIONAL)
 # EXECUTABLE
 add_executable(WavePDF src/main.cpp)
 
-# wxWidgets aus Conan verwenden
+# USE wxWidgets FROM CONAN
 target_link_libraries(WavePDF PRIVATE wxWidgets::wxWidgets)
