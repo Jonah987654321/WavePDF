@@ -7,7 +7,11 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # CONAN TOOLCHAIN
-include(${CMAKE_BINARY_DIR}/conan_toolchain.cmake)
+include(${CMAKE_BINARY_DIR}/conan/conan_toolchain.cmake)
+
+# CONAN DEPENDENCIES
+include(${CMAKE_BINARY_DIR}/conan/conandeps.cmake OPTIONAL)
+include(${CMAKE_BINARY_DIR}/conan/conandeps_legacy.cmake OPTIONAL)
 
 # EXECUTABLE
 add_executable(WavePDF src/main.cpp)
