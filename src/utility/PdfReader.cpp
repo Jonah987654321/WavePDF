@@ -77,6 +77,7 @@ bool PdfReader::validateEOF() {
         this->setError("Can't read file", "File missing %%EOF");
         return false;
     }
+    return true;
 }
 
 // Function to locate & read startxref (byte offset for xref)
@@ -113,6 +114,7 @@ bool parseXRefOffset() {
         this->setError("Can't read file", "Invalid startxref number");
         return false;
     }
+    return true;
 }
 
 // Main function to be called to process the file path
