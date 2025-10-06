@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 BASE_DIR=$(pwd)
 
@@ -8,9 +9,12 @@ if [ ! -f "$BASE_DIR/conanfile.txt" ] || [ ! -f "$BASE_DIR/CMakeLists.txt" ]; th
 fi
 
 REBUILD=false
+BUILD_TYPE="Debug"
 for arg in "$@"; do
     if [ "$arg" == "--rebuild" ]; then
         REBUILD=true
+    elif [ "$arg" == "--release" ]; then
+        BUILD_TYPE="Release"
     fi
 done
 
@@ -27,5 +31,6 @@ fi
 mkdir build
 cd build 
 mkdir conan
-conan install .. --output-folder=./conan --build=missing 
-cmake .. -DCMAKE_BUILD_TYPE=Release 
+conan install .. --output-folder=./conan --build=missing -s build_type=$BUILD_TYPE 
+cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE 
+echo "CMake Build finished with build type $BUILD_TYPE"

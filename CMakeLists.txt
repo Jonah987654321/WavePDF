@@ -13,8 +13,17 @@ include(${CMAKE_BINARY_DIR}/conan/conan_toolchain.cmake)
 include(${CMAKE_BINARY_DIR}/conan/conandeps.cmake OPTIONAL)
 include(${CMAKE_BINARY_DIR}/conan/conandeps_legacy.cmake OPTIONAL)
 
+# SOURCE FILES
+set(SOURCES
+    src/main.cpp
+    src/utility/PdfReader.cpp
+)
+
 # EXECUTABLE
-add_executable(WavePDF src/main.cpp)
+add_executable(WavePDF ${SOURCES})
 
 # USE wxWidgets FROM CONAN
 target_link_libraries(WavePDF PRIVATE wxWidgets::wxWidgets)
+
+# SET INCLUDE PATH
+target_include_directories(WavePDF PRIVATE src) 
