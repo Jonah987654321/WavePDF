@@ -70,10 +70,46 @@ bool PdfReader::process() {
     size_t startEOFRead = this->buffer.size()-20, endEOFRead = this->buffer.size();
     std::string eof = this->readByteRangeFromBuffer(startEOFRead, endEOFRead);
     int eofStartPos = eof.find("%%EOF");
-    if (eofStartPos == std::string::npos)  {
+    if (eofStartPos == std::string::npos) {
+        // No %%EOF in bytes read
         this->setError("Can't read file", "File missing %%EOF");
         return false;
     }
+
+    // Locate startxref
+    size_t startXRefPosRead = this->buffer.size()-1024, endXRefPosRead = this->buffer.size();
+    std::string xRefPosRead = this->readByteRangeFromBuffer(startXRefPosRead, endXRefPosRead);
+    int startXrefPos = xRefPosRead.find("startxref\n");
+    if (startXrefPos == std::string::npos) {
+        // No startxref in bytes read
+        this->setError("Can't read file", "File missing startxref");
+        return false;
+    }
+    // Extract the number after startxref
+    startXrefPos += 9; // skip the "startxref"
+    while (startXrefPos < xRefPosRead.size() && (xRefPosRead[startXrefPos] == ' ' || xRefPosRead[startXrefPos] == '\n' || xRefPosRead[startXrefPos] == '\r')) {
+        startXrefPos++; // skip whitespace and newlines
+    }
+    size_t endXRefPos = startXrefPos;
+    while (endXRefPos < xRefPosRead.size() && isdigit(xRefPosRead[endXRefPos])) {
+        // Select all following connected digits -> the xref offset
+        endXRefPos++;
+    }
+    if (startXrefPos == endXRefPos) {
+        this->setError("Can't read file", "startxref has no offset number");
+        return false;
+    }
+    // Convert string to integer & write to attribute
+    try {
+        this->xRefOffset = std::stoul(xRefPosRead.substr(startXrefPos, endXRefPos - startXrefPos));
+    } catch (...) {
+        this->setError("Can't read file", "Invalid startxref number");
+        return false;
+    }
+
+    std::cout << this->xRefOffset << std::endl;
+
+
 
     return true;
 }
