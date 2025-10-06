@@ -38,6 +38,13 @@ std::string PdfReader::readByteRangeFromBuffer(size_t start, size_t end) {
     return extracted;
 }
 
+// Helper function to read from the buffer based on offset
+std::string PdfReader::readOffsetRangeFromBuffer(size_t start, size_t end) {
+    size_t startByte = start + this->arbitraryStartByteOffset;
+    size_t endByte = end + this->arbitraryStartByteOffset;
+    return this->readByteRangeFromBuffer(startByte, endByte);
+}
+
 // ********** START FUNCTIONS FOR PROCESS ********** 
 
 // Function to open the input stream to given file path & write to buffer
@@ -60,6 +67,58 @@ bool PdfReader::writeToBuffer() {
     if (!input_stream) {
         this->setError("Error reading file!");
         return false;
+    }
+
+    return true;
+}
+
+// Function to parse the PDF version & wether its binary or not
+bool PdfReader::readFileHeader() {
+    if (this->buffer.empty()) throw std::logic_error("PdfReader::readFileHeader() called before buffer was loaded");
+
+    /* Find start of file (%PDF-) as we need to skip potential 
+        preceding arbitrary bytes based on ISO32000 7.5.2 note 1 */
+    bool entryFound = false;
+    size_t startVersion = 0, endVersion = 4;
+    while (!entryFound) {
+        if (this->readByteRangeFromBuffer(startVersion, endVersion) == "%PDF-") {
+            entryFound = true;
+        } else if (endVersion > 1024) {
+            // No file header found in first 1024 bytes
+            this->setError("Invalid PDF Format", "No %PDF- found in first 1024 bytes");
+            return false;
+        } else {
+            startVersion++;
+            endVersion++;
+        }
+    }
+
+    // Set arbitraryStartByteOffset to be added to all offsets as all offsets are calculated from the starting % 
+    this->arbitraryStartByteOffset = startVersion;
+
+    // Read the version number:
+    this->pdfVersion = this->readByteRangeFromBuffer(endVersion+1, endVersion+3);
+
+    // Check if there is a command following including atleast 4 binary bits
+    size_t binaryCheckStart = endVersion+4;
+    size_t binaryCheckEnd = binaryCheckStart+50;
+    std::string binaryCheck = this->readByteRangeFromBuffer(binaryCheckStart, binaryCheckEnd);
+    size_t commentStart = 0;
+    while (commentStart < binaryCheck.size() && (binaryCheck[commentStart] == ' ' || binaryCheck[commentStart] == '\n' || binaryCheck[commentStart] == '\r')) {
+        commentStart++; // skip whitespace and newlines
+    }
+    if (commentStart == binaryCheck.size() || binaryCheck[commentStart] != '%'){
+        this->pdfIsBinary = false;
+    } else {
+        // Loop until next new line & count binary bytes
+        int binaryCount = 0;
+        while (commentStart < binaryCheck.size() && binaryCheck[commentStart] != '\n' && binaryCheck[commentStart] != '\r') {
+            if ((unsigned char)binaryCheck[commentStart] >= 128) {
+                binaryCount++;
+            }
+            commentStart++;
+        }
+        this->pdfIsBinary = binaryCount >= 4;
     }
 
     return true;
@@ -120,6 +179,7 @@ bool PdfReader::parseXRefOffset() {
 // Main function to be called to process the file path
 bool PdfReader::process() {
     if (!this->writeToBuffer()) return false;
+    if (!this->readFileHeader()) return false;
     if (!this->validateEOF()) return false;
     if (!this->parseXRefOffset()) return false;
     
