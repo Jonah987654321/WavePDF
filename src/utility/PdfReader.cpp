@@ -81,7 +81,7 @@ bool PdfReader::validateEOF() {
 }
 
 // Function to locate & read startxref (byte offset for xref)
-bool parseXRefOffset() {
+bool PdfReader::parseXRefOffset() {
     if (this->buffer.empty()) throw std::logic_error("PdfReader::parseXRefOffset() called before buffer was loaded");
 
     // Locating startxref in buffer
