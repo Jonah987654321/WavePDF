@@ -11,6 +11,7 @@
 // Constructor, save filepath as attribute
 PdfReader::PdfReader(const wxString& filePath): filePath(filePath) {}
 
+// Set error message & log to wxLog
 void PdfReader::setError(const std::string& msg, const std::optional<std::string>& log) {
     this->errorMessage = msg;
     this->error = true;
@@ -20,11 +21,29 @@ void PdfReader::setError(const std::string& msg, const std::optional<std::string
     wxLogError(wxString(logMessage));
 }
 
+// Getter for retrieving the error msg
 std::string PdfReader::getErrorMessage() {
     return this->errorMessage;
 }
 
+// Helper function to read from the buffer at a given byte range
+std::string PdfReader::readByteRangeFromBuffer(size_t start, size_t end) {
+    // Validate byte range
+    if (start >= this->buffer.size() || end > this->buffer.size() || start >= end) {
+        throw std::runtime_error("Invalid byte range");
+    }
+
+    std::string extracted(this->buffer.begin() + start, this->buffer.begin() + end + 1);
+
+    return extracted;
+}
+
+// ********** START FUNCTIONS FOR PROCESS ********** 
+
+// Function to open the input stream to given file path & write to buffer
 bool PdfReader::writeToBuffer() {
+    if (!this->buffer.empty()) return true; // buffer has already been written
+
     wxFileInputStream input_stream(this->filePath);
     if (!input_stream.IsOk()) {
         std::string logMsg = "Error on opening stream for " + this->filePath.ToStdString();
@@ -46,27 +65,10 @@ bool PdfReader::writeToBuffer() {
     return true;
 }
 
-std::string PdfReader::readByteRangeFromBuffer(size_t start, size_t end) {
-    // Validate byte range
-    if (start >= this->buffer.size() || end > this->buffer.size() || start >= end) {
-        throw std::runtime_error("Invalid byte range");
-    }
+// Function to check if file correctly ends with EOF
+bool PdfReader::validateEOF() {
+    if (this->buffer.empty()) throw std::logic_error("PdfReader::validateEOF() called before buffer was loaded");
 
-    std::string extracted(this->buffer.begin() + start, this->buffer.begin() + end + 1);
-
-    return extracted;
-}
-
-bool PdfReader::process() {
-    if (!this->writeToBuffer()) {
-        return false;
-    }
-
-    // Debug output for testing purposes
-    //std::cout << this->readByteRangeFromBuffer(0, this->buffer.size());
-    //std::cout << (int)this->buffer[this->buffer.size()-2] << "\n";
-
-    // Check if file correctly ends with EOF
     size_t startEOFRead = this->buffer.size()-20, endEOFRead = this->buffer.size();
     std::string eof = this->readByteRangeFromBuffer(startEOFRead, endEOFRead);
     int eofStartPos = eof.find("%%EOF");
@@ -75,8 +77,13 @@ bool PdfReader::process() {
         this->setError("Can't read file", "File missing %%EOF");
         return false;
     }
+}
 
-    // Locate startxref
+// Function to locate & read startxref (byte offset for xref)
+bool parseXRefOffset() {
+    if (this->buffer.empty()) throw std::logic_error("PdfReader::parseXRefOffset() called before buffer was loaded");
+
+    // Locating startxref in buffer
     size_t startXRefPosRead = this->buffer.size()-1024, endXRefPosRead = this->buffer.size();
     std::string xRefPosRead = this->readByteRangeFromBuffer(startXRefPosRead, endXRefPosRead);
     int startXrefPos = xRefPosRead.find("startxref\n");
@@ -106,10 +113,13 @@ bool PdfReader::process() {
         this->setError("Can't read file", "Invalid startxref number");
         return false;
     }
+}
 
-    std::cout << this->xRefOffset << std::endl;
-
-
-
+// Main function to be called to process the file path
+bool PdfReader::process() {
+    if (!this->writeToBuffer()) return false;
+    if (!this->validateEOF()) return false;
+    if (!this->parseXRefOffset()) return false;
+    
     return true;
 }

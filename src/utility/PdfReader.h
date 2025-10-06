@@ -16,8 +16,12 @@ class PdfReader {
     private:
         // Helper methods:
         void setError(const std::string& msg, const std::optional<std::string>& log = std::nullopt);
-        bool writeToBuffer();
         std::string readByteRangeFromBuffer(size_t start, size_t end);
+
+        // Methods used for PdfReader::process()
+        bool writeToBuffer();
+        bool validateEOF();
+        bool parseXRefOffset();
 
         // Attributes:
         wxString filePath;
