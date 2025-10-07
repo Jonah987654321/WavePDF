@@ -33,7 +33,8 @@ This will:
 * Generate the CMake build files
 * Configure the project for development
 
-You can re-run setup at any time using: ```
+You can re-run setup at any time using: 
+```bash
 helper/setup.sh --rebuild
 ```
 
