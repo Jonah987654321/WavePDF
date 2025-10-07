@@ -34,15 +34,22 @@ std::string PdfReader::readByteRangeFromBuffer(size_t start, size_t end) {
     }
 
     std::string extracted(this->buffer.begin() + start, this->buffer.begin() + end + 1);
-
     return extracted;
 }
 
 // Helper function to read from the buffer based on offset
-std::string PdfReader::readOffsetRangeFromBuffer(size_t start, size_t end) {
+std::string PdfReader::readOffsetRangeFromBuffer(size_t start, std::optional<size_t> end) {
     size_t startByte = start + this->arbitraryStartByteOffset;
-    size_t endByte = end + this->arbitraryStartByteOffset;
+    size_t endByte = end.has_value() ? end.value() + this->arbitraryStartByteOffset : this->buffer.size();
     return this->readByteRangeFromBuffer(startByte, endByte);
+}
+
+// Function to get the byte position of the next not whitespace/new line
+size_t PdfReader::getNextContentPos(const std::string& read, size_t start) {
+    while (start < read.size() && (read[start] == ' ' || read[start] == '\n' || read[start] == '\r')) {
+        start++;
+    }
+    return start;
 }
 
 // ********** START FUNCTIONS FOR PROCESS ********** 
@@ -103,10 +110,7 @@ bool PdfReader::readFileHeader() {
     size_t binaryCheckStart = endVersion+4;
     size_t binaryCheckEnd = binaryCheckStart+50;
     std::string binaryCheck = this->readByteRangeFromBuffer(binaryCheckStart, binaryCheckEnd);
-    size_t commentStart = 0;
-    while (commentStart < binaryCheck.size() && (binaryCheck[commentStart] == ' ' || binaryCheck[commentStart] == '\n' || binaryCheck[commentStart] == '\r')) {
-        commentStart++; // skip whitespace and newlines
-    }
+    size_t commentStart = this->getNextContentPos(binaryCheck, 0); // Skip whitespace and newlines
     if (commentStart == binaryCheck.size() || binaryCheck[commentStart] != '%'){
         this->pdfIsBinary = false;
     } else {
@@ -146,7 +150,7 @@ bool PdfReader::parseXRefOffset() {
     // Locating startxref in buffer
     size_t startXRefPosRead = this->buffer.size()-1024, endXRefPosRead = this->buffer.size();
     std::string xRefPosRead = this->readByteRangeFromBuffer(startXRefPosRead, endXRefPosRead);
-    int startXrefPos = xRefPosRead.find("startxref\n");
+    size_t startXrefPos = xRefPosRead.find("startxref\n");
     if (startXrefPos == std::string::npos) {
         // No startxref in bytes read
         this->setError("Can't read file", "File missing startxref");
@@ -154,9 +158,7 @@ bool PdfReader::parseXRefOffset() {
     }
     // Extract the number after startxref
     startXrefPos += 9; // skip the "startxref"
-    while (startXrefPos < xRefPosRead.size() && (xRefPosRead[startXrefPos] == ' ' || xRefPosRead[startXrefPos] == '\n' || xRefPosRead[startXrefPos] == '\r')) {
-        startXrefPos++; // skip whitespace and newlines
-    }
+    startXrefPos = this->getNextContentPos(xRefPosRead, startXrefPos); // skip whitespace and newlines
     size_t endXRefPos = startXrefPos;
     while (endXRefPos < xRefPosRead.size() && isdigit(xRefPosRead[endXRefPos])) {
         // Select all following connected digits -> the xref offset
@@ -176,12 +178,37 @@ bool PdfReader::parseXRefOffset() {
     return true;
 }
 
+// Function to parse the xref table from the file
+bool PdfReader::parseXRefTable() {
+    if (this->xRefOffset == std::string::npos) throw std::logic_error("PdfReader::parseXRefTable() called without parsed xref offset");
+
+    // Read from xRefOffset to end
+    std::string xRefRead = this->readOffsetRangeFromBuffer(this->xRefOffset);
+
+    // Verify if xref is starting at parsed offset
+    if (xRefRead.substr(0, 4) != "xref") {
+        this->setError("Can't read file", "xref not found at parsed offset");
+        return false;
+    }
+
+    size_t currentReadPos = this->getNextContentPos(xRefRead, 5);
+    bool continueReading = true;
+    xrefSubsection currentSubsection;
+    while (continueReading) {
+        // Read one line:
+        while ()
+    }
+
+    return true;
+}
+
 // Main function to be called to process the file path
 bool PdfReader::process() {
     if (!this->writeToBuffer()) return false;
     if (!this->readFileHeader()) return false;
     if (!this->validateEOF()) return false;
     if (!this->parseXRefOffset()) return false;
+    if (!this->parseXRefTable()) return false;
     
     return true;
 }
