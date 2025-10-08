@@ -71,6 +71,22 @@ std::vector<std::string> PdfReader::split(const std::string& text, char delimite
     return result;
 }
 
+// Helper function to check if a given string can be converted to a size_t
+bool PdfReader::canConvertToSizeT(const std::string& s) {
+    try {
+        size_t pos;
+        unsigned long long val = std::stoull(s, &pos);
+        // Check if entire string was consumed
+        return pos == s.size();
+    } catch (const std::invalid_argument&) {
+        // Not a number
+        return false;
+    } catch (const std::out_of_range&) {
+        // Number too large for unsigned long long
+        return false;
+    }
+}
+
 // ********** START FUNCTIONS FOR PROCESS ********** 
 
 // Function to open the input stream to given file path & write to buffer
@@ -219,13 +235,83 @@ bool PdfReader::parseXRefTable() {
         while (xRefRead[currentReadEnd+1] != '\n' && xRefRead[currentReadEnd+1] != '\r') {
             currentReadEnd++;
         }
-        std::string line = xRefRead.substr(currentReadPos, currentReadEnd);
+        currentReadEnd++; // To include the last character
+        std::string line = xRefRead.substr(currentReadPos, currentReadEnd - currentReadPos);
         std::vector<std::string> lineData = this->split(line, ' ');
 
-        for (std::string i: lineData) {
-            std::cout << i << std::endl;
+        bool isPartOfXref = false;
+
+        // Check if we have a new subsection head
+        if (lineData.size() == 2 && this->canConvertToSizeT(lineData[0]) && this->canConvertToSizeT(lineData[1])) {
+            // Is there a previous finished subsection we can push to the table?
+            if (!currentSubsection.objects.empty()) {
+                if (currentSubsection.amountObjects == currentSubsection.objects.size()) {
+                    this->xrefTable.push_back(currentSubsection);
+                } else {
+                    this->setError("Can't read file", "xref subsection object count does not match");
+                    return false;
+                }
+            }
+
+            // Check if the new subsection object number range collude with an existing subsection
+            size_t startObject = static_cast<size_t>(std::stoull(lineData[0]));
+            size_t amountObjects = static_cast<size_t>(std::stoull(lineData[1]));
+            for (xrefSubsection sec: this->xrefTable) {
+                /* Either:
+                    - the right border of existing range needs to be smaller than left of new
+                    - or the left border of existing needs to be bigger than right of new
+                    to verify the ranges don't overlap
+                */
+                if (!(sec.startObject > startObject+amountObjects || sec.startObject+sec.amountObjects < startObject)) {
+                    this->setError("Can't read file", "xref subsection have overlapping object numbers");
+                    return false;
+                }
+            }
+
+            currentSubsection = xrefSubsection{};
+            currentSubsection.startObject = startObject;
+            currentSubsection.amountObjects = amountObjects;
+
+            isPartOfXref = true;
         }
-        continueReading = false;
+
+        // Check if we have a new xref entry that matches all requirements
+        if (lineData.size() == 3 && 
+            this->canConvertToSizeT(lineData[0]) && lineData[0].size() == 10 &&
+            this->canConvertToSizeT(lineData[1]) && lineData[1].size() == 5 &&
+            (lineData[2] == "f" || lineData[3] == "n")) {
+
+                if (currentSubsection.startObject == -1 || currentSubsection.amountObjects == -1) {
+                    this->setError("Can't read file", "xref entry before subsection head");
+                    return false;
+                }
+
+                // Create new entry
+                xrefEntry entry;
+                entry.entryOne =  static_cast<size_t>(std::stoull(lineData[0]));
+                entry.generation = static_cast<size_t>(std::stoull(lineData[1]));
+                entry.number = currentSubsection.startObject+currentSubsection.objects.size();
+                entry.type = lineData[3][0]; // -> [0] to get as char
+
+                // Add entry to current subsection
+                currentSubsection.objects.push_back(entry);
+        }
+        
+        // Was the line still a valid xref element?
+        if (!isPartOfXref) {
+            // Push a potential last subsection to xref table
+            if (!currentSubsection.objects.empty()) {
+                if (currentSubsection.amountObjects == currentSubsection.objects.size()) {
+                    this->xrefTable.push_back(currentSubsection);
+                } else {
+                    this->setError("Can't read file", "xref subsection object count does not match");
+                    return false;
+                }
+            }
+
+            // xref table is finished
+            continueReading = false;
+        }
     }
 
     return true;

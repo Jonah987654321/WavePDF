@@ -7,7 +7,7 @@ TEST(PdfReaderIntegrationTest, SamplePDFProcess) {
     wxInitializer initializer;
     ASSERT_TRUE(initializer.IsOk());
 
-    PdfReader reader("../sample.pdf");
+    PdfReader reader("../tests/samples/sample.pdf");
 
     // Test if the full process runs through
     EXPECT_TRUE(reader.process());

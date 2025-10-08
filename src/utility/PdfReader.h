@@ -11,12 +11,13 @@
 struct xrefEntry {
     size_t entryOne;
     uint16_t generation;
+    size_t number;
     char type;
 };
 
 struct xrefSubsection {
-    size_t startObject;
-    size_t amountObjects;
+    size_t startObject = -1;
+    size_t amountObjects = -1;
     std::vector<xrefEntry> objects;
 };
 
@@ -35,6 +36,7 @@ class PdfReader {
         std::string readOffsetRangeFromBuffer(size_t start, std::optional<size_t> end = std::nullopt);
         size_t getNextContentPos(const std::string& read, size_t start);
         std::vector<std::string> split(const std::string& text, char delimiter);
+        bool canConvertToSizeT(const std::string& s);
 
         // Methods used for PdfReader::process()
         bool writeToBuffer();
