@@ -12,6 +12,14 @@ struct xrefEntry {
     uint16_t generation;
     size_t number;
     char type;
+
+    // Equal operator for tests
+    bool operator==(const xrefEntry& other) const {
+        return entryOne == other.entryOne &&
+               generation == other.generation &&
+               number == other.number &&
+               type == other.type;
+    }
 };
 
 struct xrefSubsection {
@@ -19,6 +27,13 @@ struct xrefSubsection {
     size_t amountObjects;
     std::vector<xrefEntry> objects;
     bool initDone = false;
+
+    // Equal operator for tests
+    bool operator==(const xrefSubsection& other) const {
+        return startObject == other.startObject &&
+               amountObjects == other.amountObjects &&
+               objects == other.objects;
+    }
 };
 
 class PdfReader {
