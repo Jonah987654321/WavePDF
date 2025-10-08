@@ -218,14 +218,22 @@ bool PdfReader::parseXRefTable() {
     }
 
     size_t currentReadPos = this->getNextContentPos(xRefRead, 5);
-    size_t currentReadEnd = currentReadPos;
+    size_t currentReadEnd;
     bool continueReading = true;
     xrefSubsection currentSubsection;
     while (continueReading) {
+        currentReadEnd = currentReadPos;
+
         // Read one line, push read end until a newline CR or LF is detected:
-        while (xRefRead[currentReadEnd+1] != '\n' && xRefRead[currentReadEnd+1] != '\r') {
+        while (currentReadEnd + 1 < xRefRead.size() && xRefRead[currentReadEnd+1] != '\n' && xRefRead[currentReadEnd+1] != '\r') {
             currentReadEnd++;
         }
+        
+        if (currentReadEnd == xRefRead.size()-1) {
+            this->setError("Can't read file", "unexpencted end of file when parsing xref");
+            return false;
+        }
+
         currentReadEnd++; // To include the last character
         std::string line = xRefRead.substr(currentReadPos, currentReadEnd - currentReadPos);
         std::vector<std::string> lineData = this->split(line, ' ');
@@ -262,6 +270,7 @@ bool PdfReader::parseXRefTable() {
             currentSubsection = xrefSubsection{};
             currentSubsection.startObject = startObject;
             currentSubsection.amountObjects = amountObjects;
+            currentSubsection.initDone = true;
 
             isPartOfXref = true;
         }
@@ -270,9 +279,9 @@ bool PdfReader::parseXRefTable() {
         if (lineData.size() == 3 && 
             this->canConvertToSizeT(lineData[0]) && lineData[0].size() == 10 &&
             this->canConvertToSizeT(lineData[1]) && lineData[1].size() == 5 &&
-            (lineData[2] == "f" || lineData[3] == "n")) {
+            (lineData[2] == "f" || lineData[2] == "n")) {
 
-                if (currentSubsection.startObject == -1 || currentSubsection.amountObjects == -1) {
+                if (!currentSubsection.initDone) {
                     this->setError("Can't read file", "xref entry before subsection head");
                     return false;
                 }
@@ -282,10 +291,12 @@ bool PdfReader::parseXRefTable() {
                 entry.entryOne =  static_cast<size_t>(std::stoull(lineData[0]));
                 entry.generation = static_cast<size_t>(std::stoull(lineData[1]));
                 entry.number = currentSubsection.startObject+currentSubsection.objects.size();
-                entry.type = lineData[3][0]; // -> [0] to get as char
+                entry.type = lineData[2][0]; // -> [0] to get as char
 
                 // Add entry to current subsection
                 currentSubsection.objects.push_back(entry);
+
+                isPartOfXref = true;
         }
         
         // Was the line still a valid xref element?
@@ -302,8 +313,12 @@ bool PdfReader::parseXRefTable() {
 
             // xref table is finished
             continueReading = false;
+        } else {
+            currentReadPos = this->getNextContentPos(xRefRead, currentReadEnd);
         }
     }
+
+    std::cout << this->xrefTable.size() << std::endl;
 
     return true;
 }

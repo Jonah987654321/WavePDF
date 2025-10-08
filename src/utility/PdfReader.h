@@ -7,7 +7,6 @@
 #include <wx/string.h>
 #include <cstdint>
 
-
 struct xrefEntry {
     size_t entryOne;
     uint16_t generation;
@@ -16,9 +15,10 @@ struct xrefEntry {
 };
 
 struct xrefSubsection {
-    size_t startObject = -1;
-    size_t amountObjects = -1;
+    size_t startObject;
+    size_t amountObjects;
     std::vector<xrefEntry> objects;
+    bool initDone = false;
 };
 
 class PdfReader {
