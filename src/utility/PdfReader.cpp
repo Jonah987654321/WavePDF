@@ -18,13 +18,9 @@ void PdfReader::setError(const std::string& msg, const std::optional<std::string
     this->error = true;
 
     std::string logMessage = log ? log.value() : msg;
+    this->log = logMessage;
 
     wxLogError(wxString(logMessage));
-}
-
-// Getter for retrieving the error msg
-std::string PdfReader::getErrorMessage() {
-    return this->errorMessage;
 }
 
 // Getter for retrieving the xref offset

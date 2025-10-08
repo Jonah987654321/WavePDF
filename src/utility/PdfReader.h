@@ -26,9 +26,11 @@ class PdfReader {
         PdfReader(const wxString& filePath);
         bool process();
 
-        // Getter & setter methods
-        std::string getErrorMessage();
-        std::size_t getXRefOffset();
+        // Getter methods
+        std::string getErrorMessage() { return errorMessage; }
+        std::string getLog() { return log; }
+        std::size_t getXRefOffset() {return xRefOffset; }
+        std::vector<xrefSubsection> getXRefTable() { return xrefTable };
     private:
         // Helper methods:
         void setError(const std::string& msg, const std::optional<std::string>& log = std::nullopt);
@@ -58,6 +60,7 @@ class PdfReader {
 
         // For error handling
         std::string errorMessage;
+        std::string log;
         bool error = false;
 };
 
