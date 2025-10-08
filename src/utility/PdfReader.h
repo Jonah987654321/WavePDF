@@ -30,7 +30,7 @@ class PdfReader {
         std::string getErrorMessage() { return errorMessage; }
         std::string getLog() { return log; }
         std::size_t getXRefOffset() {return xRefOffset; }
-        std::vector<xrefSubsection> getXRefTable() { return xrefTable };
+        std::vector<xrefSubsection> getXRefTable() { return xrefTable; }
     private:
         // Helper methods:
         void setError(const std::string& msg, const std::optional<std::string>& log = std::nullopt);

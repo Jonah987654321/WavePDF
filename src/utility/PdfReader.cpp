@@ -23,11 +23,6 @@ void PdfReader::setError(const std::string& msg, const std::optional<std::string
     wxLogError(wxString(logMessage));
 }
 
-// Getter for retrieving the xref offset
-std::size_t PdfReader::getXRefOffset() {
-    return this->xRefOffset;
-}
-
 // Helper function to read from the buffer at a given byte range
 std::string PdfReader::readByteRangeFromBuffer(size_t start, size_t end) {
     // Validate byte range
