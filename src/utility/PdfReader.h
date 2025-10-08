@@ -27,12 +27,14 @@ class PdfReader {
 
         // Getter & setter methods
         std::string getErrorMessage();
+        std::size_t getXRefOffset();
     private:
         // Helper methods:
         void setError(const std::string& msg, const std::optional<std::string>& log = std::nullopt);
         std::string readByteRangeFromBuffer(size_t start, size_t end);
         std::string readOffsetRangeFromBuffer(size_t start, std::optional<size_t> end = std::nullopt);
         size_t getNextContentPos(const std::string& read, size_t start);
+        std::vector<std::string> split(const std::string& text, char delimiter);
 
         // Methods used for PdfReader::process()
         bool writeToBuffer();

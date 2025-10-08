@@ -1,5 +1,6 @@
 [requires]
 wxwidgets/3.2.8
+gtest/1.14.0
 
 [generators]
 CMakeDeps

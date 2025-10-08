@@ -27,3 +27,12 @@ target_link_libraries(WavePDF PRIVATE wxWidgets::wxWidgets)
 
 # SET INCLUDE PATH
 target_include_directories(WavePDF PRIVATE src) 
+
+# TESTING
+enable_testing()
+add_executable(test_pdfReader 
+    tests/test_pdfreader.cpp
+    src/utility/PdfReader.cpp
+)
+target_link_libraries(test_pdfReader PRIVATE gtest::gtest wxWidgets::wxWidgets)
+add_test(NAME PdfReaderTest COMMAND test_pdfReader)

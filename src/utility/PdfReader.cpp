@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <sstream>
 #include <wx/wfstream.h>
 #include <wx/log.h>
 #include <wx/string.h>
@@ -24,6 +25,11 @@ void PdfReader::setError(const std::string& msg, const std::optional<std::string
 // Getter for retrieving the error msg
 std::string PdfReader::getErrorMessage() {
     return this->errorMessage;
+}
+
+// Getter for retrieving the xref offset
+std::size_t PdfReader::getXRefOffset() {
+    return this->xRefOffset;
 }
 
 // Helper function to read from the buffer at a given byte range
@@ -50,6 +56,19 @@ size_t PdfReader::getNextContentPos(const std::string& read, size_t start) {
         start++;
     }
     return start;
+}
+
+// Helper function to split a string into substrings by given delimiter
+std::vector<std::string> PdfReader::split(const std::string& text, char delimiter) {
+    std::vector<std::string> result;
+    std::istringstream iss(text);
+    std::string token;
+
+    while (std::getline(iss, token, delimiter)) {
+        result.push_back(token);
+    }
+
+    return result;
 }
 
 // ********** START FUNCTIONS FOR PROCESS ********** 
@@ -192,11 +211,21 @@ bool PdfReader::parseXRefTable() {
     }
 
     size_t currentReadPos = this->getNextContentPos(xRefRead, 5);
+    size_t currentReadEnd = currentReadPos;
     bool continueReading = true;
     xrefSubsection currentSubsection;
     while (continueReading) {
-        // Read one line:
-        while ()
+        // Read one line, push read end until a newline CR or LF is detected:
+        while (xRefRead[currentReadEnd+1] != '\n' && xRefRead[currentReadEnd+1] != '\r') {
+            currentReadEnd++;
+        }
+        std::string line = xRefRead.substr(currentReadPos, currentReadEnd);
+        std::vector<std::string> lineData = this->split(line, ' ');
+
+        for (std::string i: lineData) {
+            std::cout << i << std::endl;
+        }
+        continueReading = false;
     }
 
     return true;

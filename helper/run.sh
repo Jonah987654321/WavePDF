@@ -11,6 +11,7 @@ fi
 echo "Switching to build directory && starting make"
 cd build
 make
+ctest --verbose
 echo "Starting executable..."
 echo "############################"
 ./WavePDF
