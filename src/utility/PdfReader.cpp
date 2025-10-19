@@ -1,5 +1,7 @@
 #include "PdfReader.h"
 
+#include "objects/NameObject.h"
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -77,6 +79,33 @@ bool PdfReader::canConvertToSizeT(const std::string& s) {
         return false;
     }
 }
+
+// Methods for setting markers & reading from there
+char PdfReader::readNext() {
+    if (this->markerIsAtEnd()) {
+        throw std::runtime_error("Invalid marker position for buffer size");
+    }
+    char read = this->buffer.at(this->markerPos);
+    // Increment markerPos so we can read the next char next time
+    this->markerPos++;
+    return read;
+}
+
+size_t PdfReader::getMarker() {
+    return this->markerPos;
+}
+
+void PdfReader::setMarker(size_t pos) {
+    if (pos >= this->buffer.size() || pos < 0) {
+        throw std::runtime_error("Invalid marker position for buffer size");
+    }
+    this->markerPos = pos;
+}
+
+bool PdfReader::markerIsAtEnd() {
+    return this->markerPos == this->buffer.size()
+}
+
 
 // ********** START FUNCTIONS FOR PROCESS ********** 
 
@@ -321,6 +350,54 @@ bool PdfReader::parseXRefTable() {
     std::cout << this->xrefTable.size() << std::endl;
 
     return true;
+}
+
+BaseObject PdfReader::parseObject(size_t byteOffset) {
+    // Set marker at starting pos & read first char
+    this->setMarker(byteOffset);
+    char start = this->readNext
+
+    ObjectType type;
+    switch (start) {
+        case '(':
+            type = STRING_LITERAL;
+            break;
+        
+        case '<':
+            char next = this->readNext();
+            if (next == '<') {
+                type = DICTIONARY;
+            } else {
+                type = STRING_HEXADECIMAL;
+            }
+            break;
+
+        case '/':
+            // Object to be parsed is a name
+            char current = this->readNext();
+            std::vector<char> nameParts;
+            while (current != ' ') {
+                if (current < '!' || current > '~') {
+                    // ERROR TO BE HANDLED!!
+                }
+                if (current == '#') {
+                    hex = {this->readNext(), this->readNext()};
+                    if (!std::isxdigit(static_cast<unsigned char>(hex[0])) || !std::isxdigit(static_cast<unsigned char>(hex[1]))) {
+                        // ERROR TO BE HANDLED!!
+                    }
+                    current = static_cast<char>(std::stoi(str(hex), nullptr, 16));
+                }
+                nameParts.push_back(current);
+            }
+            return NameObject(byteOffset, this->getMarker(), str(nameParts));
+
+        case '[':
+            type = ARRAY;
+            break;
+
+        default:
+            break;
+    }
 }
 
 // Main function to be called to process the file path

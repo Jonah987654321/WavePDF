@@ -4,23 +4,28 @@
 #include <cstdint>
 
 enum ObjectType {
-    BOOLEAN,
-    INTEGER,
-    REAL,
-    STRING_LITERAL,
-    STRING_HEXADECIMAL,
-    NAME,
-    ARRAY,
-    DICTIONARY,
-    STREAM,
-    INDIRECT
+    OBJT_BOOLEAN,
+    OBJT_INTEGER,
+    OBJT_REAL,
+    OBJT_STRING_LITERAL,
+    OBJT_STRING_HEXADECIMAL,
+    OBJT_NAME,
+    OBJT_ARRAY,
+    OBJT_DICTIONARY,
+    OBJT_STREAM,
+    OBJT_INDIRECT
 };
 
 class BaseObject {
     public:
+        BaseObject(ObjectType type, size_t start, size_t end) 
+            : type(type), start(start), end(end) {};
+        ObjectType getType() { return type; }
+        size_t getStart() { return start; }
+        size_t getEnd() { return end; }
 
     protected:
-        size_t number;
-        uint16_t generation;
         ObjectType type;
+        size_t start;
+        size_t end;
 };

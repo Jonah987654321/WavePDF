@@ -1,6 +1,8 @@
 #ifndef UTILITY_PDFREADER_H
 #define UTILITY_PDFREADER_H
 
+#include "objects/BaseObject.h"
+
 #include <vector>
 #include <string>
 #include <optional>
@@ -55,12 +57,22 @@ class PdfReader {
         std::vector<std::string> split(const std::string& text, char delimiter);
         bool canConvertToSizeT(const std::string& s);
 
+        // Important: Helper method for actually parsing objects
+        BaseObject parseObject(size_t byteOffset);
+
         // Methods used for PdfReader::process()
         bool writeToBuffer();
         bool readFileHeader();
         bool validateEOF();
         bool parseXRefOffset();
         bool parseXRefTable();
+
+        // Methods for setting markers and reading from there
+        size_t markerPos = 0;
+        size_t getMarker();
+        char readNext();
+        void setMarker(size_t pos);
+        bool markerIsAtEnd();
 
         // General attributes:
         wxString filePath;

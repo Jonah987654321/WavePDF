@@ -1,9 +1,11 @@
-#include "BaseObject.h";
+#pragma once
 
-class BooleanObject: BaseObject {
+#include "BaseObject.h"
+
+class BooleanObject: public BaseObject {
     public:
-        bool getData() const { return data; }
+        bool getValue() const { return value; }
 
     private:
-        bool data;
+        bool value;
 };
