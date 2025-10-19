@@ -103,7 +103,7 @@ void PdfReader::setMarker(size_t pos) {
 }
 
 bool PdfReader::markerIsAtEnd() {
-    return this->markerPos == this->buffer.size()
+    return this->markerPos == this->buffer.size();
 }
 
 
@@ -355,24 +355,24 @@ bool PdfReader::parseXRefTable() {
 BaseObject PdfReader::parseObject(size_t byteOffset) {
     // Set marker at starting pos & read first char
     this->setMarker(byteOffset);
-    char start = this->readNext
+    char start = this->readNext();
 
-    ObjectType type;
     switch (start) {
         case '(':
-            type = STRING_LITERAL;
+            // Object to be parsed is a literal string
             break;
         
-        case '<':
+        case '<': {
             char next = this->readNext();
             if (next == '<') {
-                type = DICTIONARY;
+                // Object to be parsed is a dictionary
             } else {
-                type = STRING_HEXADECIMAL;
+                // Object to be parsed is a hex string
             }
             break;
+        }
 
-        case '/':
+        case '/': {
             // Object to be parsed is a name
             char current = this->readNext();
             std::vector<char> nameParts;
@@ -381,23 +381,27 @@ BaseObject PdfReader::parseObject(size_t byteOffset) {
                     // ERROR TO BE HANDLED!!
                 }
                 if (current == '#') {
-                    hex = {this->readNext(), this->readNext()};
+                    char hex[] = {this->readNext(), this->readNext(), '\0'};
                     if (!std::isxdigit(static_cast<unsigned char>(hex[0])) || !std::isxdigit(static_cast<unsigned char>(hex[1]))) {
                         // ERROR TO BE HANDLED!!
                     }
-                    current = static_cast<char>(std::stoi(str(hex), nullptr, 16));
+                    current = static_cast<char>(std::stoi(std::string(hex), nullptr, 16));
                 }
                 nameParts.push_back(current);
+                current = this->readNext();
             }
-            return NameObject(byteOffset, this->getMarker(), str(nameParts));
+            return NameObject(byteOffset, this->getMarker(), std::string(nameParts.begin(), nameParts.end()));
+        }
 
-        case '[':
-            type = ARRAY;
+        case '[': {
+            // Object to be parsed is an array
             break;
+        }
 
         default:
             break;
     }
+    return BaseObject(OBJT_INDIRECT, 0, 1);
 }
 
 // Main function to be called to process the file path
