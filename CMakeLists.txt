@@ -14,13 +14,15 @@ include(${CMAKE_BINARY_DIR}/conan/conandeps.cmake OPTIONAL)
 include(${CMAKE_BINARY_DIR}/conan/conandeps_legacy.cmake OPTIONAL)
 
 # SOURCE FILES
-set(SOURCES
-    src/main.cpp
-    src/utility/PdfReader.cpp
+file(GLOB_RECURSE SOURCES
+    src/**/*.cpp
 )
 
-# EXECUTABLE
-add_executable(WavePDF ${SOURCES})
+# SET EXECUTABLE
+add_executable(WavePDF 
+    src/main.cpp
+    ${SOURCES}
+)
 
 # USE wxWidgets FROM CONAN
 target_link_libraries(WavePDF PRIVATE wxWidgets::wxWidgets)
@@ -32,7 +34,7 @@ target_include_directories(WavePDF PRIVATE src)
 enable_testing()
 add_executable(test_pdfReader 
     tests/test_pdfreader.cpp
-    src/utility/PdfReader.cpp
+    ${SOURCES}
 )
 target_link_libraries(test_pdfReader PRIVATE gtest::gtest wxWidgets::wxWidgets)
 add_test(NAME PdfReaderTest COMMAND test_pdfReader)
