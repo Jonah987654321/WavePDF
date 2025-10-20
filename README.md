@@ -2,6 +2,7 @@
 
 **WavePDF** is supposed to a lightweight **PDF viewer and editor** written in **C++**.  
 Development is still in an **early stage**.  
+WavePDF is trying to be conform to [ISO32000-2](https://developer.adobe.com/document-services/docs/assets/5b15559b96303194340b99820d3a70fa/PDF_ISO_32000-2.pdf)
 
 
 ## Features (in progress)
