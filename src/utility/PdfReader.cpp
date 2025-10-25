@@ -1,6 +1,7 @@
 #include "PdfReader.h"
 
 #include "objects/NameObject.h"
+#include "objects/ArrayObject.h"
 
 #include <iostream>
 #include <vector>
@@ -323,12 +324,20 @@ BaseObject PdfReader::parseObject(size_t byteOffset) {
                 nameParts.push_back(current);
                 current = this->buffer.readNext();
             }
-            return NameObject(byteOffset, this->buffer.getPosition(), std::string(nameParts.begin(), nameParts.end()));
+            return NameObject(byteOffset, this->buffer.getPosition()-1, std::string(nameParts.begin(), nameParts.end()));
         }
 
         case '[': {
             // Object to be parsed is an array
-            break;
+            ArrayObject obj(byteOffset);
+            this->buffer.skipToNextContent();
+            while (this->buffer.readNext() != ']') {
+                this->buffer.backOne();
+                obj.addObject(this->parseObject(this->buffer.getPosition()));
+                this->buffer.skipToNextContent();
+            }
+            obj.setEnd(this->buffer.getPosition()-1);
+            return obj;
         }
 
         default:

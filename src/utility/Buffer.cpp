@@ -64,7 +64,14 @@ void Buffer::skipToNextContent() {
     while (!this->markerIsAtEnd() && (current == ' ' || current == '\n' || current == '\r')) {
         current = this->readNext();
     }
+    this->backOne();
+}
+
+void Buffer::backOne() {
     this->setPosition(this->getPosition()-1);
+    if (this->getPosition() < 0) {
+        this->setPosition(0)
+    }
 }
 
 void Buffer::setArbitraryStartByteOffset(size_t s) {

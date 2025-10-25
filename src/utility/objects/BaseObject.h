@@ -20,6 +20,9 @@ class BaseObject {
     public:
         BaseObject(ObjectType type, size_t start, size_t end) 
             : type(type), start(start), end(end) {};
+        BaseObject(ObjectType type, size_t start)
+            : type(type), start(start) {};
+        void setEnd(size_t end) { this->end = end; }
         ObjectType getType() { return type; }
         size_t getStart() { return start; }
         size_t getEnd() { return end; }
