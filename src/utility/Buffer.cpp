@@ -59,6 +59,14 @@ size_t Buffer::getSize() {
     return this->data.size();
 }
 
+void Buffer::skipToNextContent() {
+    char current = this->readNext();
+    while (!this->markerIsAtEnd() && (current == ' ' || current == '\n' || current == '\r')) {
+        current = this->readNext();
+    }
+    this->setPosition(this->getPosition()-1);
+}
+
 void Buffer::setArbitraryStartByteOffset(size_t s) {
     this->arbitraryStartByteOffset = s;
 }

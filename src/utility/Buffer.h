@@ -14,6 +14,7 @@ class Buffer {
         char readNext();
         bool isReady();
         size_t getSize();
+        void skipToNextContent();
 
         void setArbitraryStartByteOffset(size_t s);
 
