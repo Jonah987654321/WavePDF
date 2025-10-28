@@ -70,7 +70,7 @@ void Buffer::skipToNextContent() {
 void Buffer::backOne() {
     this->setPosition(this->getPosition()-1);
     if (this->getPosition() < 0) {
-        this->setPosition(0)
+        this->setPosition(0);
     }
 }
 

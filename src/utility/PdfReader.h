@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include <memory>
 #include <wx/string.h>
 #include <cstdint>
 
@@ -57,7 +58,7 @@ class PdfReader {
         bool canConvertToSizeT(const std::string& s);
 
         // Important: Helper method for actually parsing objects
-        BaseObject parseObject(size_t byteOffset);
+        std::shared_ptr<BaseObject> parseObject(size_t byteOffset);
 
         // Methods used for PdfReader::process()
         bool readFileHeader();

@@ -13,22 +13,23 @@ enum ObjectType {
     OBJT_ARRAY,
     OBJT_DICTIONARY,
     OBJT_STREAM,
-    OBJT_INDIRECT
+    OBJT_INDIRECT,
+    OBJT_NULL,
+    OBJT_INVALID
 };
 
 class BaseObject {
     public:
-        BaseObject(ObjectType type, size_t start, size_t end) 
-            : type(type), start(start), end(end) {};
-        BaseObject(ObjectType type, size_t start)
-            : type(type), start(start) {};
+        BaseObject(size_t start, size_t end) 
+            : start(start), end(end) {};
+        BaseObject(size_t start)
+            : start(start) {};
         void setEnd(size_t end) { this->end = end; }
-        ObjectType getType() { return type; }
+        virtual ObjectType getType() { return OBJT_INVALID; }
         size_t getStart() { return start; }
         size_t getEnd() { return end; }
 
     protected:
-        ObjectType type;
         size_t start;
         size_t end;
 };

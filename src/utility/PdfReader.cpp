@@ -2,7 +2,9 @@
 
 #include "objects/NameObject.h"
 #include "objects/ArrayObject.h"
+#include "objects/DictionaryObject.h"
 
+#include <memory>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -286,7 +288,7 @@ bool PdfReader::parseXRefTable() {
     return true;
 }
 
-BaseObject PdfReader::parseObject(size_t byteOffset) {
+std::shared_ptr<BaseObject> PdfReader::parseObject(size_t byteOffset) {
     // Set marker at starting pos & read first char
     this->buffer.setPosition(byteOffset);
     char start = this->buffer.readNext();
@@ -300,6 +302,33 @@ BaseObject PdfReader::parseObject(size_t byteOffset) {
             char next = this->buffer.readNext();
             if (next == '<') {
                 // Object to be parsed is a dictionary
+                std::shared_ptr<DictionaryObject> dict = std::make_shared<DictionaryObject>(byteOffset);
+                this->buffer.skipToNextContent();
+                while (this->buffer.readNext() != '>') {
+                    this->buffer.backOne();
+
+                    // Read the key
+                    std::shared_ptr<BaseObject> obj = this->parseObject(this->buffer.getPosition());
+                    if (obj->getType() != OBJT_NAME) {
+                        // ERROR TO BE HANDLED!!
+                    }
+                    // Cast the pointer type to NameObject
+                    std::shared_ptr<NameObject> key = std::dynamic_pointer_cast<NameObject>(obj);
+
+                    // Skip to next object & parse -> value
+                    this->buffer.skipToNextContent();
+                    obj = this->parseObject(this->buffer.getPosition());
+                    if (obj->getType() == OBJT_INVALID) {
+                        // ERROR TO BE HANDLED!!
+                    }
+
+                    // Add key & value to dictionary
+                    dict->addElement(key, obj);
+
+                    this->buffer.skipToNextContent();
+                }
+                dict->setEnd(this->buffer.getPosition()-1);
+                return dict;
             } else {
                 // Object to be parsed is a hex string
             }
@@ -324,26 +353,28 @@ BaseObject PdfReader::parseObject(size_t byteOffset) {
                 nameParts.push_back(current);
                 current = this->buffer.readNext();
             }
-            return NameObject(byteOffset, this->buffer.getPosition()-1, std::string(nameParts.begin(), nameParts.end()));
+            std::shared_ptr<NameObject> obj = std::make_shared<NameObject>(byteOffset, this->buffer.getPosition()-1, std::string(nameParts.begin(), nameParts.end()));
+            return obj;
         }
 
         case '[': {
             // Object to be parsed is an array
-            ArrayObject obj(byteOffset);
+            std::shared_ptr<ArrayObject> obj = std::make_shared<ArrayObject>(byteOffset);
             this->buffer.skipToNextContent();
             while (this->buffer.readNext() != ']') {
                 this->buffer.backOne();
-                obj.addObject(this->parseObject(this->buffer.getPosition()));
+                std::shared_ptr<BaseObject> element = this->parseObject(this->buffer.getPosition());
+                obj->addObject(element);
                 this->buffer.skipToNextContent();
             }
-            obj.setEnd(this->buffer.getPosition()-1);
+            obj->setEnd(this->buffer.getPosition()-1);
             return obj;
         }
 
         default:
             break;
     }
-    return BaseObject(OBJT_INDIRECT, 0, 1);
+    return std::make_shared<BaseObject>(0, 0);
 }
 
 // Main function to be called to process the file path
